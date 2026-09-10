@@ -23,6 +23,9 @@ import mx.tec.sabores.ui.screens.RestaurantDetailScreen
 import mx.tec.sabores.ui.screens.RestaurantListScreen
 import mx.tec.sabores.ui.state.NewReviewViewModel
 import mx.tec.sabores.ui.state.SaboresViewModel
+import mx.tec.sabores.ui.components.CargandoView
+import mx.tec.sabores.ui.components.ErrorView
+import mx.tec.sabores.ui.state.UiState
 
 @Composable
 fun SaboresApp() {
@@ -62,10 +65,17 @@ fun SaboresApp() {
         ) {
 
             composable(Route.HOME) {
-                RestaurantListScreen(
-                    restaurants = viewModel.restaurantes,
-                    onRestaurantClick = { id -> nav.navigate(Route.detail(id)) }
-                )
+                when (val estado = viewModel.restaurantes) {
+                    is UiState.Cargando -> CargandoView()
+                    is UiState.Error -> ErrorView(
+                        mensaje = estado.mensaje,
+                        onReintentar = { viewModel.cargarRestaurantes() }
+                    )
+                    is UiState.Exito -> RestaurantListScreen(
+                        restaurants = estado.datos,
+                        onRestaurantClick = { id -> nav.navigate(Route.detail(id)) }
+                    )
+                }
             }
 
             composable(Route.MY_REVIEWS) {
