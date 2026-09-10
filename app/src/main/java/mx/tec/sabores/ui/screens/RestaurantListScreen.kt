@@ -12,13 +12,13 @@ import androidx.compose.ui.unit.dp
 import mx.tec.sabores.data.RestaurantRepository
 import mx.tec.sabores.domain.RatingSummary
 import mx.tec.sabores.domain.Restaurant
+import mx.tec.sabores.domain.RestaurantEnLista
 import mx.tec.sabores.ui.components.RestaurantCard
 import mx.tec.sabores.ui.theme.SaboresTheme
 
 @Composable
 fun RestaurantListScreen(
-    restaurants: List<Restaurant>,
-    summaryOf: (Int) -> RatingSummary,
+    restaurants: List<RestaurantEnLista>,
     onRestaurantClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -27,11 +27,11 @@ fun RestaurantListScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(restaurants, key = { it.id }) { restaurant ->
+        items(restaurants, key = { it.restaurant.id }) { item ->
             RestaurantCard(
-                restaurant = restaurant,
-                summary = summaryOf(restaurant.id),
-                onClick = { onRestaurantClick(restaurant.id) }
+                restaurant = item.restaurant,
+                summary = item.summary,
+                onClick = { onRestaurantClick(item.restaurant.id) }
             )
         }
     }
@@ -42,8 +42,20 @@ fun RestaurantListScreen(
 private fun ListPreview() {
     SaboresTheme {
         RestaurantListScreen(
-            restaurants = RestaurantRepository().getAll(),
-            summaryOf = { RatingSummary(4.2, 3) },
+            restaurants = listOf(
+                RestaurantEnLista(
+                    restaurant = Restaurant(
+                        id = 1,
+                        name = "Tacos El Güero",
+                        cuisine = "Mexicana",
+                        address = "Av. Tec 123",
+                        description = "Los mejores tacos",
+                        priceLevel = 1,
+                        emoji = "🌮"
+                    ),
+                    summary = RatingSummary(4.2, 3)
+                )
+            ),
             onRestaurantClick = {}
         )
     }
