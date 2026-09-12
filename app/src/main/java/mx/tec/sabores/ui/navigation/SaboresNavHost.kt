@@ -5,10 +5,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -31,12 +34,22 @@ import mx.tec.sabores.ui.state.UiState
 fun SaboresApp() {
     val nav = rememberNavController()
     val viewModel: SaboresViewModel = viewModel()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val backStackEntry by nav.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = MenuItem.entries.any { it.route == currentRoute }
 
+    val mensajeError = viewModel.mensajeError
+    LaunchedEffect(mensajeError) {
+        if (mensajeError != null) {
+            snackbarHostState.showSnackbar(mensajeError)
+            viewModel.limpiarError()
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
@@ -79,7 +92,15 @@ fun SaboresApp() {
             }
 
             composable(Route.MY_REVIEWS) {
-                MyReviewsScreen(items = viewModel.mias)
+                LaunchedEffect(Unit) {
+                    viewModel.cargarMisResenas()
+                }
+                MyReviewsScreen(
+                    items = viewModel.mias,
+                    onDeleteReview = { reviewId ->
+                        viewModel.borrarResena(reviewId)
+                    }
+                )
             }
 
             composable(
@@ -96,7 +117,10 @@ fun SaboresApp() {
                     summary = detalle.summary,
                     reviews = detalle.reviews,
                     onWriteReviewClick = { nav.navigate(Route.newReview(id)) },
-                    onBack = { nav.popBackStack() }
+                    onBack = { nav.popBackStack() },
+                    onDeleteReview = { reviewId ->
+                        viewModel.borrarResena(reviewId, restaurantId = id)
+                    }
                 )
             }
 
@@ -115,11 +139,10 @@ fun SaboresApp() {
                     onStarsChange = formViewModel::onStarsChange,
                     onCommentChange = formViewModel::onCommentChange,
                     onSave = {
-                        // El popBackStack ya no es inmediato: ocurre cuando el servidor confirma.
-                        // Si falla, la pantalla se queda y el error se ve.
                         formViewModel.publicar(id) {
                             viewModel.cargarDetalle(id)
                             viewModel.cargarRestaurantes()
+                            viewModel.cargarMisResenas()
                             nav.popBackStack()
                         }
                     },

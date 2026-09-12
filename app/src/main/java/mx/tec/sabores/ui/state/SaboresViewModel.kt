@@ -39,7 +39,17 @@ class SaboresViewModel(
     var mias by mutableStateOf<List<MyReviewItem>>(emptyList())
         private set
 
-    init { cargarRestaurantes() }
+    var mensajeError by mutableStateOf<String?>(null)
+        private set
+
+    init {
+        cargarRestaurantes()
+        cargarMisResenas()
+    }
+
+    fun limpiarError() {
+        mensajeError = null
+    }
 
     fun cargarRestaurantes() {
         viewModelScope.launch {
@@ -53,6 +63,55 @@ class SaboresViewModel(
             val resultado = pedir { Detalle(repository.getById(id), repository.getReviews(id)) }
             if (resultado is UiState.Exito) {
                 detalle = resultado.datos
+            }
+        }
+    }
+
+    fun cargarMisResenas() {
+        viewModelScope.launch {
+            try {
+                val myReviews = repository.getMyReviews()
+                val restaurantsMap = repository.getAll().associateBy { it.id }
+                mias = myReviews.map { review ->
+                    val name = restaurantsMap[review.restaurantId]?.name ?: "Restaurante"
+                    MyReviewItem(restaurantName = name, review = review)
+                }
+            } catch (e: Exception) {
+                // Manejar error de forma segura
+            }
+        }
+    }
+
+    fun borrarResena(reviewId: Int, restaurantId: Int? = null) {
+        viewModelScope.launch {
+            try {
+                repository.deleteReview(reviewId)
+                cargarMisResenas()
+                cargarRestaurantes()
+                if (restaurantId != null) {
+                    cargarDetalle(restaurantId)
+                }
+            } catch (e: HttpException) {
+                mensajeError = mensajeDe(e)
+            } catch (e: Exception) {
+                mensajeError = "No hay conexión. No se pudo borrar la reseña."
+            }
+        }
+    }
+
+    fun editarResena(reviewId: Int, stars: Int? = null, comment: String? = null, restaurantId: Int? = null) {
+        viewModelScope.launch {
+            try {
+                repository.editReview(reviewId, stars, comment)
+                cargarMisResenas()
+                cargarRestaurantes()
+                if (restaurantId != null) {
+                    cargarDetalle(restaurantId)
+                }
+            } catch (e: HttpException) {
+                mensajeError = mensajeDe(e)
+            } catch (e: Exception) {
+                mensajeError = "No hay conexión. No se pudo editar la reseña."
             }
         }
     }
