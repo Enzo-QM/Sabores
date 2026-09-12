@@ -1,4 +1,4 @@
-﻿# Práctica 4 — Sabores en red
+﻿# Práctica 4 — Sabores en red (Horas de commit entre las dos branches)
 
 Código de arranque de la Práctica 4 de TC2007B.
 
