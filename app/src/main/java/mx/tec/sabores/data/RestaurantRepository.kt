@@ -1,6 +1,7 @@
 package mx.tec.sabores.data
 
 import mx.tec.sabores.data.remote.Network
+import mx.tec.sabores.data.remote.NewReviewBody
 import mx.tec.sabores.data.remote.SaboresApi
 import mx.tec.sabores.data.remote.toDomain
 import mx.tec.sabores.domain.Restaurant
@@ -22,6 +23,8 @@ class RestaurantRepository(private val api: SaboresApi = Network.api) {
     suspend fun getMyReviews(): List<Review> =
         api.getMyReviews().map { it.toDomain() }
 
+    suspend fun addReview(restaurantId: Int, stars: Int, comment: String): Review =
+        api.createReview(NewReviewBody(restaurantId, stars, comment)).toDomain()
     suspend fun getAllForList(): List<RestaurantEnLista> =
         api.getRestaurants().map { RestaurantEnLista(it.toDomain(), it.toSummary()) }
 

@@ -17,14 +17,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import mx.tec.sabores.ui.components.CargandoView
+import mx.tec.sabores.ui.components.ErrorView
 import mx.tec.sabores.ui.screens.MyReviewsScreen
 import mx.tec.sabores.ui.screens.NewReviewScreen
 import mx.tec.sabores.ui.screens.RestaurantDetailScreen
 import mx.tec.sabores.ui.screens.RestaurantListScreen
 import mx.tec.sabores.ui.state.NewReviewViewModel
 import mx.tec.sabores.ui.state.SaboresViewModel
-import mx.tec.sabores.ui.components.CargandoView
-import mx.tec.sabores.ui.components.ErrorView
 import mx.tec.sabores.ui.state.UiState
 
 @Composable
@@ -103,7 +103,8 @@ fun SaboresApp() {
             composable(
                 route = Route.NEW_REVIEW,
                 arguments = listOf(navArgument(Route.ARG_RESTAURANT_ID) { type = NavType.IntType })
-            ) {
+            ) { entry ->
+                val id = entry.arguments?.getInt(Route.ARG_RESTAURANT_ID) ?: return@composable
                 val restaurant = viewModel.detalle?.restaurant ?: return@composable
 
                 val formViewModel: NewReviewViewModel = viewModel()
@@ -114,8 +115,13 @@ fun SaboresApp() {
                     onStarsChange = formViewModel::onStarsChange,
                     onCommentChange = formViewModel::onCommentChange,
                     onSave = {
-                        // Todavía no guarda: publicar contra el servidor es el Bloque C.
-                        nav.popBackStack()
+                        // El popBackStack ya no es inmediato: ocurre cuando el servidor confirma.
+                        // Si falla, la pantalla se queda y el error se ve.
+                        formViewModel.publicar(id) {
+                            viewModel.cargarDetalle(id)
+                            viewModel.cargarRestaurantes()
+                            nav.popBackStack()
+                        }
                     },
                     onCancel = { nav.popBackStack() }
                 )

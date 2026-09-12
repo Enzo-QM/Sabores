@@ -21,6 +21,8 @@ data class Detalle(
     val restaurant: Restaurant,
     val reviews: List<Review>
 ) {
+    // La regla del dominio sigue viva: el promedio se calcula aquí, no se hereda
+    // del servidor, para que cambie al instante al publicar tu reseña.
     val summary: RatingSummary = RatingSummary.from(reviews)
 }
 
@@ -42,19 +44,24 @@ class SaboresViewModel(
     fun cargarRestaurantes() {
         viewModelScope.launch {
             restaurantes = UiState.Cargando
-            restaurantes = try {
-                UiState.Exito(repository.getAllForList())
-            } catch (e: IOException) {
-                UiState.Error("No hay conexión. Revisa tu internet.")
-            } catch (e: HttpException) {
-                UiState.Error("El servidor respondió ${e.code()}.")
-            }
+            restaurantes = pedir { repository.getAllForList() }
         }
     }
 
     fun cargarDetalle(id: Int) {
         viewModelScope.launch {
-            detalle = Detalle(repository.getById(id), repository.getReviews(id))
+            val resultado = pedir { Detalle(repository.getById(id), repository.getReviews(id)) }
+            if (resultado is UiState.Exito) {
+                detalle = resultado.datos
+            }
         }
+    }
+
+    private suspend fun <T> pedir(block: suspend () -> T): UiState<T> = try {
+        UiState.Exito(block())
+    } catch (e: IOException) {
+        UiState.Error("No hay conexión. Revisa tu internet.")
+    } catch (e: HttpException) {
+        UiState.Error(mensajeDe(e))
     }
 }

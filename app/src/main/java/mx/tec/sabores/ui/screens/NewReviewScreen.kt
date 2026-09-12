@@ -69,12 +69,22 @@ fun NewReviewScreen(
                 },
                 modifier = Modifier.fillMaxWidth()
             )
+// El error del servidor: un 422 que tu validación no atrapó, o una caída de
+// red. Se muestra aquí y la pantalla NO se cierra.
+            val errorDelServidor = uiState.errorAlGuardar
+            if (errorDelServidor != null) {
+                Text(
+                    text = errorDelServidor,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
 
             Button(
                 onClick = onSave,
                 enabled = uiState.canSave,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Publicar reseña") }
+            ) { Text(if (uiState.guardando) "Publicando…" else "Publicar reseña") }
         }
     }
 }
